@@ -38,19 +38,23 @@
   header {
     position: sticky;
     top:0;
-    background: rgba(20, 30, 40, 0.85);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.7);
-    padding: 12px 24px;
+    background: rgba(20, 30, 40, 0.95);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.85);
+    padding: 12px 30px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     z-index: 10;
+    transition: box-shadow 0.3s ease;
+  }
+  header.scrolled {
+    box-shadow: 0 6px 20px #00d8ffbb;
   }
   header h1 {
     font-weight: 700;
     font-size: 1.8rem;
     color: #00d8ff;
-    text-shadow: 0 0 6px #00d8ffbb;
+    text-shadow: 0 0 8px #00d8ffbb;
   }
   header .logo {
     display: flex;
@@ -61,12 +65,12 @@
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    filter: drop-shadow(0 0 3px #00d8ff);
+    filter: drop-shadow(0 0 6px #00d8ff);
   }
 
   main {
     flex: 1;
-    padding: 20px 30px;
+    padding: 25px 30px 60px 30px;
     max-width: 1200px;
     margin: auto;
     width: 100%;
@@ -100,25 +104,34 @@
   }
 
   .pdf-block {
-    background: rgba(30, 42, 55, 0.85);
+    background: rgba(30, 42, 55, 0.6);
     padding: 20px;
     border-radius: 16px;
-    box-shadow: 0 0 20px #00d8ff44;
+    box-shadow: 0 0 30px #00d8ff55;
     display: flex;
     flex-direction: column;
-    transition: transform 0.3s ease;
+    transition: transform 0.3s ease, background 0.3s ease;
+    backdrop-filter: blur(12px);
+    position: relative;
   }
   .pdf-block:hover {
     transform: translateY(-6px);
-    box-shadow: 0 0 30px #00d8ff99;
+    background: rgba(30, 42, 55, 0.8);
+    box-shadow: 0 0 40px #00d8ff99;
   }
 
   .pdf-title {
-    font-size: 1.3rem;
+    font-size: 1.4rem;
     font-weight: 700;
-    margin-bottom: 16px;
+    margin-bottom: 8px;
     color: #00e4ff;
-    text-shadow: 0 0 8px #00e4ffaa;
+    text-shadow: 0 0 8px #00e4ffbb;
+  }
+  .progress-text {
+    font-size: 0.9rem;
+    color: #a1eaffdd;
+    margin-bottom: 16px;
+    user-select: none;
   }
 
   .pages-container {
@@ -132,14 +145,14 @@
     width: 140px;
     height: 210px;
     border-radius: 12px;
-    border: 2px solid #00e4ff66;
+    border: 2px solid #00e4ff88;
     box-shadow: 0 4px 12px #00e4ff44;
     cursor: pointer;
     transition: transform 0.25s ease, box-shadow 0.25s ease;
   }
   canvas:hover {
     transform: scale(1.1);
-    box-shadow: 0 0 24px #00e4ffcc;
+    box-shadow: 0 0 30px #00e4ffcc;
   }
 
   button#download-zip {
@@ -212,6 +225,48 @@
     cursor: pointer;
     user-select: none;
   }
+
+  /* Loader */
+  .loader {
+    border: 5px solid rgba(0, 215, 255, 0.25);
+    border-top: 5px solid #00d7ff;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 16px auto;
+  }
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  /* Mensagem de erro */
+  .message {
+    color: #ff4c4c;
+    font-weight: 700;
+    font-size: 1rem;
+    margin: 20px auto;
+    max-width: 480px;
+    text-align: center;
+    user-select: none;
+  }
+
+  @media (max-width: 600px) {
+    canvas {
+      width: 120px;
+      height: 180px;
+    }
+
+    button#download-zip {
+      width: 90%;
+      font-size: 16px;
+    }
+
+    input[type="file"] {
+      max-width: 90%;
+    }
+  }
 </style>
 </head>
 <body>
@@ -227,10 +282,11 @@
   <input type="file" id="file-input" accept="application/pdf" multiple />
   <div id="pdfs-container"></div>
   <button id="download-zip" disabled>Baixar tudo (.zip)</button>
+  <div id="message-container"></div>
 </main>
 
 <footer>
-  Feito com 💙 pela Zero Two e maninho
+  @bettermanga_oficial
 </footer>
 
 <!-- Modal Preview -->
@@ -246,8 +302,27 @@
   const downloadBtn = document.getElementById('download-zip');
   const modal = document.getElementById('modal');
   const modalImg = modal.querySelector('img');
+  const messageContainer = document.getElementById('message-container');
 
   let allImages = [];
+
+  function createLoader() {
+    const loader = document.createElement('div');
+    loader.className = 'loader';
+    return loader;
+  }
+
+  function clearMessages() {
+    messageContainer.innerHTML = '';
+  }
+
+  function showMessage(text) {
+    clearMessages();
+    const msg = document.createElement('div');
+    msg.className = 'message';
+    msg.textContent = text;
+    messageContainer.appendChild(msg);
+  }
 
   fileInput.addEventListener('change', async (e) => {
     const files = Array.from(e.target.files);
@@ -256,12 +331,13 @@
     allImages = [];
     container.innerHTML = '';
     downloadBtn.disabled = true;
+    clearMessages();
 
     for (const file of files) {
       const name = file.name;
       const chapterMatch = name.match(/(\d+)/);
       if (!chapterMatch) {
-        alert(`Arquivo "${name}" não tem número de capítulo no nome.`);
+        showMessage(`Arquivo "${name}" não tem número de capítulo no nome.`);
         continue;
       }
       const chapter = chapterMatch[1];
@@ -274,44 +350,63 @@
       title.textContent = `Capítulo ${chapter} - ${name}`;
       block.appendChild(title);
 
+      const progressText = document.createElement('div');
+      progressText.className = 'progress-text';
+      progressText.textContent = 'Carregando páginas... 0 / 0';
+      block.appendChild(progressText);
+
       const pagesDiv = document.createElement('div');
       pagesDiv.className = 'pages-container';
       block.appendChild(pagesDiv);
       container.appendChild(block);
 
-      const buffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument(new Uint8Array(buffer)).promise;
+      const loader = createLoader();
+      block.insertBefore(loader, pagesDiv);
 
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const viewport = page.getViewport({ scale: 1 });
+      try {
+        const buffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument(new Uint8Array(buffer)).promise;
+        progressText.textContent = `Carregando páginas... 0 / ${pdf.numPages}`;
 
-        const scale = Math.min(140 / viewport.width, 210 / viewport.height);
-        const view = page.getViewport({ scale });
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const viewport = page.getViewport({ scale: 1 });
 
-        const canvas = document.createElement('canvas');
-        canvas.width = view.width;
-        canvas.height = view.height;
+          const scale = Math.min(140 / viewport.width, 210 / viewport.height);
+          const view = page.getViewport({ scale });
 
-        const ctx = canvas.getContext('2d');
-        await page.render({ canvasContext: ctx, viewport: view }).promise;
-        pagesDiv.appendChild(canvas);
+          const canvas = document.createElement('canvas');
+          canvas.width = view.width;
+          canvas.height = view.height;
 
-        const imgData = canvas.toDataURL('image/png');
-        allImages.push({
-          chapter: chapter,
-          page: i,
-          dataUrl: imgData
-        });
+          const ctx = canvas.getContext('2d');
+          await page.render({ canvasContext: ctx, viewport: view }).promise;
+          pagesDiv.appendChild(canvas);
 
-        // Abrir modal ao clicar na imagem
-        canvas.addEventListener('click', () => {
-          modalImg.src = imgData;
-          modal.classList.add('show');
-          modal.setAttribute('aria-hidden', 'false');
-          document.body.style.overflow = 'hidden';
-        });
+          const imgData = canvas.toDataURL('image/png');
+          allImages.push({
+            chapter: chapter,
+            page: i,
+            dataUrl: imgData
+          });
+
+          progressText.textContent = `Carregando páginas... ${i} / ${pdf.numPages}`;
+
+          // Abrir modal ao clicar na imagem
+          canvas.addEventListener('click', () => {
+            modalImg.src = imgData;
+            modal.classList.add('show');
+            modal.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+          });
+        }
+      } catch (err) {
+        showMessage(`Erro ao processar o arquivo "${name}".`);
+        console.error(err);
       }
+
+      loader.remove();
+      progressText.textContent = `Concluído: ${pdf.numPages} páginas carregadas.`;
     }
 
     if (allImages.length) {
@@ -351,6 +446,16 @@
       modal.setAttribute('aria-hidden', 'true');
       modalImg.src = '';
       document.body.style.overflow = '';
+    }
+  });
+
+  // Sombra do header ao rolar
+  window.addEventListener('scroll', () => {
+    const header = document.querySelector('header');
+    if (window.scrollY > 20) {
+      header.classList.add('scrolled');
+    } else {
+      header.classList.remove('scrolled');
     }
   });
 </script>
