@@ -1,31 +1,257 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>PDF para Imagens por Capítulo + ZIP</title>
-  <link rel="stylesheet" href="style.css" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PDF para Imagens - Super Moderno</title>
+<style>
+  /* Reset */
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+  body, html {
+    margin:0; padding:0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    color: #eee;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Fundo animado sutil */
+  body::before {
+    content:"";
+    position: fixed;
+    top:0; left:0; width:100%; height:100%;
+    background: url("https://i.pinimg.com/originals/76/27/b7/7627b75c46d61c0d64814032297eb193.gif") center/cover no-repeat;
+    opacity: 0.1;
+    filter: blur(6px);
+    z-index: -1;
+    animation: pulse 12s ease-in-out infinite alternate;
+  }
+  @keyframes pulse {
+    0% {opacity: 0.05;}
+    100% {opacity: 0.15;}
+  }
+
+  header {
+    position: sticky;
+    top:0;
+    background: rgba(20, 30, 40, 0.85);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.7);
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 10;
+  }
+  header h1 {
+    font-weight: 700;
+    font-size: 1.8rem;
+    color: #00d8ff;
+    text-shadow: 0 0 6px #00d8ffbb;
+  }
+  header .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  header .logo img {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    filter: drop-shadow(0 0 3px #00d8ff);
+  }
+
+  main {
+    flex: 1;
+    padding: 20px 30px;
+    max-width: 1200px;
+    margin: auto;
+    width: 100%;
+  }
+
+  input[type="file"] {
+    display: block;
+    margin: 0 auto 30px auto;
+    padding: 14px 20px;
+    width: 100%;
+    max-width: 480px;
+    border: 3px dashed #00d8ff;
+    border-radius: 10px;
+    background: rgba(0, 216, 255, 0.12);
+    color: #00d8ff;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.3s ease, border-color 0.3s ease;
+    text-align: center;
+  }
+  input[type="file"]:hover {
+    background: rgba(0, 216, 255, 0.22);
+    border-color: #00a3bf;
+  }
+
+  #pdfs-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill,minmax(320px,1fr));
+    gap: 32px;
+  }
+
+  .pdf-block {
+    background: rgba(30, 42, 55, 0.85);
+    padding: 20px;
+    border-radius: 16px;
+    box-shadow: 0 0 20px #00d8ff44;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease;
+  }
+  .pdf-block:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 0 30px #00d8ff99;
+  }
+
+  .pdf-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: #00e4ff;
+    text-shadow: 0 0 8px #00e4ffaa;
+  }
+
+  .pages-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    justify-content: center;
+  }
+
+  canvas {
+    width: 140px;
+    height: 210px;
+    border-radius: 12px;
+    border: 2px solid #00e4ff66;
+    box-shadow: 0 4px 12px #00e4ff44;
+    cursor: pointer;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  canvas:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 24px #00e4ffcc;
+  }
+
+  button#download-zip {
+    display: block;
+    margin: 40px auto 20px auto;
+    background: linear-gradient(90deg,#00e4ff,#005f7f);
+    color: #000;
+    font-weight: 700;
+    font-size: 1.2rem;
+    padding: 16px 48px;
+    border: none;
+    border-radius: 14px;
+    cursor: pointer;
+    box-shadow: 0 6px 20px #00e4ffaa;
+    transition: background 0.4s ease;
+  }
+  button#download-zip:hover:not(:disabled) {
+    background: linear-gradient(90deg,#005f7f,#00e4ff);
+    color: #fff;
+  }
+  button#download-zip:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  footer {
+    text-align: center;
+    font-size: 0.9rem;
+    color: #0088aa;
+    padding: 16px 10px;
+    background: rgba(0,0,0,0.15);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    user-select: none;
+  }
+
+  /* Modal preview das imagens */
+  #modal {
+    position: fixed;
+    top:0; left:0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    z-index: 9999;
+  }
+  #modal.show {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  #modal img {
+    max-width: 90vw;
+    max-height: 90vh;
+    border-radius: 12px;
+    box-shadow: 0 0 40px #00e4ffbb;
+  }
+  #modal.close-btn {
+    position: absolute;
+    top: 18px;
+    right: 28px;
+    font-size: 32px;
+    font-weight: 900;
+    color: #00e4ff;
+    cursor: pointer;
+    user-select: none;
+  }
+</style>
 </head>
 <body>
 
-<h1>PDF para Imagens com Números de Capítulo + ZIP</h1>
-<input type="file" id="file-input" accept="application/pdf" multiple />
-<div id="pdfs-container"></div>
-<button id="download-zip" disabled>Baixar tudo (.zip)</button>
+<header>
+  <div class="logo">
+    <img src="https://cdn-icons-png.flaticon.com/512/936/936398.png" alt="Icon" />
+    <h1>PDF → Imagens Top</h1>
+  </div>
+</header>
+
+<main>
+  <input type="file" id="file-input" accept="application/pdf" multiple />
+  <div id="pdfs-container"></div>
+  <button id="download-zip" disabled>Baixar tudo (.zip)</button>
+</main>
+
+<footer>
+  Feito com 💙 pela Zero Two e maninho
+</footer>
+
+<!-- Modal Preview -->
+<div id="modal" aria-hidden="true" tabindex="-1">
+  <img src="" alt="Preview da imagem" />
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.9.179/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-
 <script>
   const fileInput = document.getElementById('file-input');
   const container = document.getElementById('pdfs-container');
   const downloadBtn = document.getElementById('download-zip');
+  const modal = document.getElementById('modal');
+  const modalImg = modal.querySelector('img');
 
   let allImages = [];
 
   fileInput.addEventListener('change', async (e) => {
     const files = Array.from(e.target.files);
-    if (files.length === 0) return;
+    if (!files.length) return;
 
     allImages = [];
     container.innerHTML = '';
@@ -60,7 +286,7 @@
         const page = await pdf.getPage(i);
         const viewport = page.getViewport({ scale: 1 });
 
-        const scale = Math.min(150 / viewport.width, 225 / viewport.height);
+        const scale = Math.min(140 / viewport.width, 210 / viewport.height);
         const view = page.getViewport({ scale });
 
         const canvas = document.createElement('canvas');
@@ -77,10 +303,18 @@
           page: i,
           dataUrl: imgData
         });
+
+        // Abrir modal ao clicar na imagem
+        canvas.addEventListener('click', () => {
+          modalImg.src = imgData;
+          modal.classList.add('show');
+          modal.setAttribute('aria-hidden', 'false');
+          document.body.style.overflow = 'hidden';
+        });
       }
     }
 
-    if (allImages.length > 0) {
+    if (allImages.length) {
       downloadBtn.disabled = false;
     }
   });
@@ -101,8 +335,25 @@
       URL.revokeObjectURL(a.href);
     });
   });
+
+  // Fechar modal ao clicar fora da imagem ou apertar ESC
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal || e.target === modalImg) {
+      modal.classList.remove('show');
+      modal.setAttribute('aria-hidden', 'true');
+      modalImg.src = '';
+      document.body.style.overflow = '';
+    }
+  });
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal.classList.contains('show')) {
+      modal.classList.remove('show');
+      modal.setAttribute('aria-hidden', 'true');
+      modalImg.src = '';
+      document.body.style.overflow = '';
+    }
+  });
 </script>
 
-<footer>@BetterManga_oficial</footer>
 </body>
 </html>
