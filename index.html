@@ -1,296 +1,421 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="scroll-smooth">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>PDF para Imagens - Alta Qualidade</title>
+  <title>PDF → Imagens (Dark Red iOS Style)</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- SweetAlert2 (tema escuro) -->
+  <link href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-dark@5/dark.min.css" rel="stylesheet" />
+
+  <!-- Toastify CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css" rel="stylesheet" />
+
+  <!-- Fonte iOS-like -->
+  <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Text&display=swap" rel="stylesheet" />
+
   <style>
-    *, *::before, *::after { box-sizing: border-box; }
-    body, html {
-      margin:0; padding:0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    body {
+      font-family: 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+        Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      background-color: #0a0a0a;
+      color: #e6e6e6;
       min-height: 100vh;
-      background: #000;
-      color: #d90550;
       display: flex;
       flex-direction: column;
-    }
-    #bg-video {
-      position: fixed;
-      top:0; left:0;
-      width: 100vw;
-      height: 100vh;
-      object-fit: cover;
-      z-index: -2;
-      filter: brightness(0.3) contrast(1.2);
-    }
-    #bg-overlay {
-      position: fixed;
-      top:0; left:0;
-      width: 100vw; height: 100vh;
-      background-color: rgba(0,0,0,0.75);
-      z-index: -1;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      margin: 0;
     }
     header {
+      background-color: #200008;
+      box-shadow: 0 1px 5px rgba(217, 5, 80, 0.8);
+      padding: 1.5rem 2rem;
       position: sticky;
       top: 0;
-      background: rgba(217, 5, 80, 0.85);
-      padding: 12px 24px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      box-shadow: 0 2px 10px rgba(217,5,80,0.8);
-      z-index: 10;
-    }
-    header .logo {
-      width: 4rem;
-      height: 4rem;
-      flex-shrink: 0;
-    }
-    header .logo img {
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
-      filter: drop-shadow(0 0 8px #d90550);
+      z-index: 50;
+      user-select: none;
     }
     header h1 {
-      margin: 0;
       font-weight: 700;
-      font-size: 1.8rem;
-      color: #fff;
-      text-shadow: 0 0 12px #d90550cc;
+      font-size: 1.9rem;
+      letter-spacing: 0.04em;
+      color: #e6e6e6;
+      text-shadow: 0 0 6px #d90550cc;
+      margin: 0;
     }
     main {
-      flex: 1;
-      padding: 20px 30px;
-      max-width: 1200px;
-      margin: auto;
-      width: 100%;
+      flex-grow: 1;
+      max-width: 960px;
+      margin: 2rem auto;
+      padding: 0 1rem;
     }
-    select, input[type="file"] {
-      display: block;
-      margin: 0 auto 20px auto;
-      padding: 14px 20px;
-      width: 100%;
-      max-width: 480px;
-      border: 3px dashed #d90550;
-      border-radius: 10px;
-      background: rgba(217, 5, 80, 0.15);
-      color: #d90550;
+    #controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+    }
+    #controls > * {
+      flex: 1 1 180px;
+      max-width: 320px;
+    }
+    input[type="file"], select {
+      background-color: #150004;
+      border: 2px solid #d90550;
+      border-radius: 12px;
+      padding: 0.8rem 1rem;
+      color: #e6e6e6;
       font-weight: 600;
       font-size: 1rem;
+      transition: border-color 0.3s ease;
+      outline-offset: 2px;
       cursor: pointer;
-      text-align: center;
+      user-select: none;
     }
-    #pdfs-container {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-      gap: 20px;
+    input[type="file"]:hover, select:hover {
+      border-color: #a10030;
     }
-    canvas {
-      width: 100%;
-      height: auto;
-      max-width: 300px;
-      border-radius: 10px;
-      border: 2px solid #d90550aa;
-      box-shadow: 0 4px 10px #d90550aa;
-      cursor: pointer;
-      transition: transform 0.25s ease, box-shadow 0.25s ease;
-    }
-    canvas:hover {
-      transform: scale(1.05);
-      box-shadow: 0 0 18px #d90550ee;
-    }
-    button#download-zip {
-      display: block;
-      margin: 40px auto 20px auto;
-      background: linear-gradient(90deg,#d90550,#700027);
+    button {
+      background: linear-gradient(135deg, #d90550, #700027);
+      border-radius: 14px;
+      border: none;
       color: #fff;
       font-weight: 700;
-      font-size: 1.2rem;
-      padding: 16px 48px;
-      border: none;
-      border-radius: 14px;
+      font-size: 1.1rem;
+      padding: 0.85rem 1.75rem;
+      box-shadow: 0 4px 15px rgba(217, 5, 80, 0.8);
       cursor: pointer;
-      box-shadow: 0 6px 20px #d90550cc;
+      transition: background 0.35s ease, box-shadow 0.35s ease;
+      user-select: none;
+    }
+    button:hover:not(:disabled) {
+      background: linear-gradient(135deg, #700027, #d90550);
+      box-shadow: 0 6px 22px rgba(217, 5, 80, 1);
+    }
+    button:disabled {
+      opacity: 0.4;
+      cursor: default;
+      box-shadow: none;
+    }
+    #info-area {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      color: #b0b0b0;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      user-select: none;
+    }
+    #pdfs-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: center;
+    }
+    .canvas-wrapper {
+      border-radius: 1rem;
+      overflow: hidden;
+      box-shadow: 0 6px 12px rgba(217,5,80,0.4);
+      cursor: pointer;
+      background-color: #1e000e;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      width: 140px;
+      height: 210px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      user-select: none;
+    }
+    .canvas-wrapper:hover {
+      transform: scale(1.1);
+      box-shadow: 0 12px 28px rgba(217,5,80,0.9);
+      z-index: 20;
+    }
+    canvas {
+      width: 140px !important;
+      height: 210px !important;
+      border-radius: 1rem;
+      object-fit: contain;
+      pointer-events: none;
+      display: block;
+      user-select: none;
+    }
+    /* Campo para renomear */
+    .rename-input {
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90%;
+      background: #330013;
+      color: #ffcad4;
+      border: 1.5px solid #d90550;
+      border-radius: 8px;
+      padding: 4px 8px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      text-align: center;
+      outline-offset: 2px;
+      user-select: text;
+      transition: background-color 0.25s ease;
+      z-index: 30;
+    }
+    .rename-input:focus {
+      background-color: #4a001f;
+      border-color: #ff406c;
     }
     footer {
       text-align: center;
-      font-size: 0.9rem;
-      color: #d90550cc;
-      padding: 16px 10px;
+      padding: 1rem;
+      font-size: 0.875rem;
+      color: #a1a1a6;
+      user-select: none;
+      background-color: #150004;
+      box-shadow: inset 0 1px 3px rgba(217,5,80,0.5);
+      margin-top: 2rem;
     }
-    #modal {
-      position: fixed;
-      top:0; left:0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(0,0,0,0.85);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s ease;
-      z-index: 9999;
+
+    /* Modal SweetAlert custom */
+    .swal2-popup {
+      background: #1e000e !important;
+      color: #e6e6e6 !important;
+      font-family: 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+        Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif !important;
+      border-radius: 20px !important;
+      box-shadow: 0 0 28px rgba(217, 5, 80, 0.95) !important;
     }
-    #modal.show {
-      opacity: 1;
-      pointer-events: auto;
+    .swal2-title {
+      color: #ff6f91 !important;
+      font-weight: 800 !important;
+      text-shadow: 0 0 6px #d90550cc !important;
     }
-    #modal img {
-      max-width: 90vw;
-      max-height: 90vh;
-      border-radius: 12px;
-      box-shadow: 0 0 40px #d90550cc;
+    .swal2-image {
+      border-radius: 14px !important;
+      box-shadow: 0 0 24px rgba(217, 5, 80, 0.9) !important;
     }
   </style>
 </head>
 <body>
-<video id="bg-video" autoplay muted loop playsinline></video>
-<div id="bg-overlay"></div>
 
 <header>
-  <div class="logo">
-    <img src="https://cdn-icons-png.flaticon.com/512/936/936398.png" alt="Logo" />
-  </div>
-  <h1>PDF → Imagens Top</h1>
+  <h1>PDF → Imagens (Dark Red iOS Style)</h1>
 </header>
 
 <main>
-  <label for="quality" style="color:#fff;font-weight:600;margin-bottom:12px;display:block;text-align:center;">
-    Qualidade da Imagem:
-  </label>
-  <select id="quality">
-    <option value="1">Baixa</option>
-    <option value="1.5" selected>Média</option>
-    <option value="2">Alta</option>
-    <option value="3">Ultra</option>
-  </select>
-  <input type="file" id="file-input" accept="application/pdf" multiple />
-  <div id="pdfs-container"></div>
-  <button id="download-zip" disabled>Baixar tudo (.zip)</button>
+  <div id="controls" aria-label="Controles para carregar PDF e baixar imagens">
+    <input
+      type="file"
+      id="file-input"
+      accept="application/pdf"
+      multiple
+      aria-describedby="fileHelp"
+    />
+    <select
+      id="quality"
+      aria-label="Qualidade das imagens"
+      title="Qualidade das imagens"
+    >
+      <option value="1">Baixa</option>
+      <option value="1.5" selected>Média</option>
+      <option value="2">Alta</option>
+      <option value="3">Ultra</option>
+    </select>
+    <button id="clear-btn" aria-label="Limpar arquivos" disabled>Limpar Tudo</button>
+    <button id="download-zip" aria-label="Baixar imagens em zip" disabled>Baixar Tudo</button>
+  </div>
+
+  <div id="info-area" aria-live="polite" aria-atomic="true">
+    <p id="pdf-name"></p>
+    <p id="image-count"></p>
+  </div>
+
+  <div id="pdfs-container" role="list" aria-label="Imagens convertidas do PDF"></div>
 </main>
 
-<footer>@bettermanga_oficial</footer>
+<footer>
+  &copy; 2025 maninho | Anime & Code vibes
+</footer>
 
-<div id="modal" aria-hidden="true" tabindex="-1">
-  <img src="" alt="Preview da imagem" />
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.0/hls.min.js"></script>
+<!-- Bibliotecas JS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.9.179/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+
 <script>
-const video = document.getElementById('bg-video');
-const videoSrc = 'https://v1.pinimg.com/videos/iht/hls/0b/ae/fb/0baefb707b7ba414c28aaeec48e7b3bb_720w.m3u8';
+(() => {
+  const fileInput = document.getElementById('file-input');
+  const qualitySelect = document.getElementById('quality');
+  const container = document.getElementById('pdfs-container');
+  const downloadBtn = document.getElementById('download-zip');
+  const clearBtn = document.getElementById('clear-btn');
+  const pdfName = document.getElementById('pdf-name');
+  const imageCount = document.getElementById('image-count');
 
-if(Hls.isSupported()) {
-  const hls = new Hls();
-  hls.loadSource(videoSrc);
-  hls.attachMedia(video);
-} else if(video.canPlayType('application/vnd.apple.mpegurl')) {
-  video.src = videoSrc;
-}
+  let allImages = [];
 
-const fileInput = document.getElementById('file-input');
-const container = document.getElementById('pdfs-container');
-const downloadBtn = document.getElementById('download-zip');
-const modal = document.getElementById('modal');
-const modalImg = modal.querySelector('img');
-let allImages = [];
+  function updateUI() {
+    downloadBtn.disabled = allImages.length === 0;
+    clearBtn.disabled = allImages.length === 0;
+    imageCount.textContent = allImages.length
+      ? `Imagens geradas: ${allImages.length}`
+      : 'Nenhuma imagem carregada.';
+  }
 
-fileInput.addEventListener('change', async (e) => {
-  const files = Array.from(e.target.files);
-  if (!files.length) return;
+  function showToast(text, bg = "#d90550") {
+    Toastify({
+      text,
+      duration: 3000,
+      gravity: "top",
+      position: "center",
+      backgroundColor: bg,
+      stopOnFocus: true,
+    }).showToast();
+  }
 
-  allImages = [];
-  container.innerHTML = '';
-  downloadBtn.disabled = true;
+  function clearAll() {
+    allImages = [];
+    container.innerHTML = '';
+    fileInput.value = '';
+    pdfName.textContent = '';
+    imageCount.textContent = '';
+    updateUI();
+  }
 
-  for (const file of files) {
-    const name = file.name;
-    const chapterMatch = name.match(/(\d+)/);
-    if (!chapterMatch) continue;
-    const chapter = chapterMatch[1];
-
-    const block = document.createElement('div');
-    block.className = 'pdf-block';
-
-    const title = document.createElement('h2');
-    title.className = 'pdf-title';
-    title.textContent = `Capítulo ${chapter} - ${name}`;
-    block.appendChild(title);
-
-    const pagesDiv = document.createElement('div');
-    pagesDiv.className = 'pages-container';
-    block.appendChild(pagesDiv);
-    container.appendChild(block);
-
+  async function processPDF(file) {
     const buffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument(new Uint8Array(buffer)).promise;
+    const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+    return pdf;
+  }
 
-    const scaleFactor = parseFloat(document.getElementById('quality').value);
+  // Faz as imagens aparecerem com fade + slide quando entram na viewport
+  function observeImagesAnimation() {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.style.opacity = '1';
+            entry.target.style.transform = 'translateY(0)';
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
 
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const viewport = page.getViewport({ scale: scaleFactor });
+    document.querySelectorAll('.canvas-wrapper').forEach(el => {
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(20px)';
+      el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+      observer.observe(el);
+    });
+  }
 
-      const canvas = document.createElement('canvas');
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
+  fileInput.addEventListener('change', async (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
 
-      const ctx = canvas.getContext('2d');
-      await page.render({ canvasContext: ctx, viewport }).promise;
-      pagesDiv.appendChild(canvas);
+    clearAll();
 
-      const imgData = canvas.toDataURL('image/png');
-      allImages.push({ chapter, page: i, dataUrl: imgData });
+    for (const file of files) {
+      pdfName.textContent = `Carregado: ${file.name}`;
+      showToast(`Processando: ${file.name}`);
 
-      canvas.addEventListener('click', () => {
-        modalImg.src = imgData;
-        modal.classList.add('show');
-        modal.setAttribute('aria-hidden', 'false');
-        document.body.style.overflow = 'hidden';
-      });
+      const pdf = await processPDF(file);
+      const scale = parseFloat(qualitySelect.value);
+
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale });
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        const ctx = canvas.getContext('2d');
+        await page.render({ canvasContext: ctx, viewport }).promise;
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'canvas-wrapper';
+        wrapper.setAttribute('role', 'listitem');
+
+        // Canvas bloqueado para pointer events para input ficar clicável
+        canvas.style.pointerEvents = 'none';
+
+        // Campo renomear
+        const renameInput = document.createElement('input');
+        renameInput.type = 'text';
+        renameInput.className = 'rename-input';
+        renameInput.value = `pagina_${i}`;
+        renameInput.title = "Clique para editar o nome";
+
+        wrapper.appendChild(canvas);
+        wrapper.appendChild(renameInput);
+        container.appendChild(wrapper);
+
+        allImages.push({ page: i, dataUrl: canvas.toDataURL('image/png'), name: renameInput.value });
+
+        // Visualizar imagem grande com SweetAlert2
+        wrapper.addEventListener('click', (ev) => {
+          // Evita abrir modal se clicar no input de renomear
+          if (ev.target === renameInput) return;
+
+          const imgData = allImages.find(img => img.page === i)?.dataUrl;
+          Swal.fire({
+            imageUrl: imgData,
+            imageAlt: `Página ${i}`,
+            showCloseButton: true,
+            showConfirmButton: false,
+            background: '#200008',
+            width: '80vw',
+            padding: '1rem',
+            customClass: { popup: 'rounded-xl shadow-lg' },
+          });
+        });
+
+        renameInput.addEventListener('input', (evt) => {
+          const index = allImages.findIndex(img => img.page === i);
+          if (index !== -1) {
+            allImages[index].name = evt.target.value.trim() || `pagina_${i}`;
+          }
+        });
+      }
     }
-  }
-
-  if (allImages.length) downloadBtn.disabled = false;
-});
-
-downloadBtn.addEventListener('click', () => {
-  const zip = new JSZip();
-  allImages.forEach(img => {
-    const base64 = img.dataUrl.split(',')[1];
-    const name = `${img.chapter.padStart(3, '0')}x${String(img.page).padStart(3, '0')}.png`;
-    zip.file(name, base64, { base64: true });
+    observeImagesAnimation();
+    updateUI();
   });
-  zip.generateAsync({ type: "blob" }).then(content => {
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(content);
-    a.download = 'capitulos_imagens.zip';
-    a.click();
-    URL.revokeObjectURL(a.href);
-  });
-});
 
-modal.addEventListener('click', (e) => {
-  if (e.target === modal) {
-    modal.classList.remove('show');
-    modal.setAttribute('aria-hidden', 'true');
-    modalImg.src = '';
-    document.body.style.overflow = '';
-  }
-});
-window.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && modal.classList.contains('show')) {
-    modal.classList.remove('show');
-    modal.setAttribute('aria-hidden', 'true');
-    modalImg.src = '';
-    document.body.style.overflow = '';
-  }
-});
+  clearBtn.addEventListener('click', () => {
+    clearAll();
+    showToast('Tudo limpo! Pode carregar outro PDF.', '#660012');
+  });
+
+  downloadBtn.addEventListener('click', () => {
+    if (!allImages.length) return;
+
+    const zip = new JSZip();
+    allImages.forEach(({ name, dataUrl }) => {
+      const base64 = dataUrl.split(',')[1];
+      let filename = name;
+      if (!filename.toLowerCase().endsWith('.png')) filename += '.png';
+      zip.file(filename, base64, { base64: true });
+    });
+
+    zip.generateAsync({ type: 'blob' }).then(blob => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'imagens_pdf.zip';
+      a.click();
+      URL.revokeObjectURL(a.href);
+      showToast('Download iniciado!', '#28a745');
+    });
+  });
+
+})();
 </script>
+
 </body>
-</html>
+</html>         faz melhoria aqui 
