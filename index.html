@@ -358,7 +358,7 @@
 
         allImages.push({ page: i, dataUrl: canvas.toDataURL('image/png'), name: renameInput.value });
 
-        // Visualizar imagem grande com SweetAlert2
+        // Visualizar imagem grande com SweetAlert2 com tamanho limitado
         wrapper.addEventListener('click', (ev) => {
           // Evita abrir modal se clicar no input de renomear
           if (ev.target === renameInput) return;
@@ -370,9 +370,17 @@
             showCloseButton: true,
             showConfirmButton: false,
             background: '#200008',
-            width: '80vw',
+            width: 'auto',
             padding: '1rem',
             customClass: { popup: 'rounded-xl shadow-lg' },
+            didOpen: () => {
+              const img = Swal.getImage();
+              if (img) {
+                img.style.maxWidth = '90vw';
+                img.style.maxHeight = '80vh';
+                img.style.objectFit = 'contain';
+              }
+            }
           });
         });
 
