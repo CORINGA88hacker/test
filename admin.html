@@ -1,209 +1,101 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Admin - Gerenciar Filmes e Séries</title>
-  <style>
-    body {
-      background: #121212;
-      color: #eee;
-      font-family: Arial, sans-serif;
-      margin: 0; padding: 20px;
-    }
-    h1, h2 {
-      color: #7f5af0;
-    }
-    input, select, textarea, button {
-      font-size: 1rem;
-      padding: 8px;
-      margin: 5px 0 15px;
-      width: 100%;
-      max-width: 500px;
-      border-radius: 6px;
-      border: none;
-      outline: none;
-      background: #222;
-      color: #eee;
-    }
-    button {
-      cursor: pointer;
-      background: #7f5af0;
-      color: white;
-      border: none;
-      transition: background 0.3s ease;
-    }
-    button:hover {
-      background: #9e7ef7;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 25px;
-      max-width: 900px;
-    }
-    th, td {
-      border: 1px solid #444;
-      padding: 10px;
-      text-align: left;
-    }
-    th {
-      background: #2c2c2c;
-    }
-    .hidden {
-      display: none;
-    }
-    .error {
-      color: #f33;
-      margin-bottom: 15px;
-    }
-    .success {
-      color: #3f3;
-      margin-bottom: 15px;
-    }
-    #elenco-list div, #episodios-list div {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 10px;
-      max-width: 500px;
-    }
-    #elenco-list input, #episodios-list input {
-      flex: 1;
-    }
-    #elenco-list button, #episodios-list button {
-      flex: 0 0 auto;
-      background: #c33;
-      border: none;
-      color: white;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    #temporadas-list > div {
-      background: #222;
-      padding: 15px;
-      border-radius: 8px;
-      margin-bottom: 15px;
-      max-width: 520px;
-    }
-    #temporadas-list h3 {
-      margin: 0 0 10px 0;
-      color: #a0a0ff;
-    }
-  </style>
-
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Admin Filmes e Séries</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #121212;
+    color: #eee;
+    padding: 20px;
+  }
+  input, select, button, textarea {
+    display: block;
+    margin: 10px 0;
+    padding: 8px;
+    width: 300px;
+    border-radius: 5px;
+    border: none;
+  }
+  button {
+    background-color: #7f5af0;
+    color: white;
+    cursor: pointer;
+  }
+  table {
+    width: 100%;
+    max-width: 800px;
+    border-collapse: collapse;
+    margin-top: 20px;
+  }
+  th, td {
+    border: 1px solid #444;
+    padding: 10px;
+  }
+  th {
+    background: #2c2c2c;
+  }
+  .hidden { display: none; }
+</style>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
-  <div id="login-container">
-    <h2>Login Admin</h2>
-    <input id="email" type="email" placeholder="Email" />
-    <input id="password" type="password" placeholder="Senha" />
-    <button id="btn-login">Entrar</button>
-    <p id="login-msg" class="error"></p>
-  </div>
+<h1>Admin - Filmes e Séries</h1>
 
-  <div id="admin-container" class="hidden">
-    <header>
-      <h1>Admin - Filmes e Séries</h1>
-      <button id="btn-logout" style="max-width: 150px;">Sair</button>
-    </header>
+<form id="formConteudo">
+  <input type="hidden" id="docId" />
+  <label>Título:
+    <input type="text" id="titulo" required />
+  </label>
+  <label>Categoria:
+    <select id="categoria" required>
+      <option value="filme">Filme</option>
+      <option value="serie">Série</option>
+    </select>
+  </label>
+  <label>Gênero:
+    <input type="text" id="genero" required />
+  </label>
+  <label>Ano:
+    <input type="text" id="ano" />
+  </label>
+  <label>Duração:
+    <input type="text" id="duracao" />
+  </label>
+  <label>Classificação:
+    <input type="text" id="classificacao" />
+  </label>
+  <label>Sinopse:
+    <textarea id="sinopse"></textarea>
+  </label>
+  <label>Link da capa (imagem):
+    <input type="url" id="capa" />
+  </label>
+  <label>Link do trailer (YouTube embed):
+    <input type="url" id="trailer" />
+  </label>
+  <label>Link para assistir:
+    <input type="url" id="linkAssistir" />
+  </label>
+  <button type="submit">Salvar</button>
+  <button type="button" id="btnLimpar">Limpar</button>
+</form>
 
-    <section>
-      <h2>Conteúdos Cadastrados</h2>
-      <select id="filter-category" style="max-width: 200px;">
-        <option value="todos">Todos</option>
-        <option value="filme">Filmes</option>
-        <option value="serie">Séries</option>
-        <option value="anime">Animes</option>
-      </select>
-      <table>
-        <thead>
-          <tr><th>Título</th><th>Categoria</th><th>Ações</th></tr>
-        </thead>
-        <tbody id="conteudo-lista">
-          <tr><td colspan="3">Carregando...</td></tr>
-        </tbody>
-      </table>
-      <button id="btn-add-new">Adicionar Novo Conteúdo</button>
-    </section>
-
-    <section id="form-section" class="hidden">
-      <h2 id="form-title">Novo Conteúdo</h2>
-      <form id="conteudo-form">
-        <input type="hidden" id="doc-id" />
-        <label>
-          Título:<br />
-          <input id="input-titulo" type="text" required />
-        </label>
-        <label>
-          Categoria:<br />
-          <select id="input-categoria" required>
-            <option value="filme">Filme</option>
-            <option value="serie">Série</option>
-            <option value="anime">Anime</option>
-            <option value="lancamento">Lançamento</option>
-            <option value="recomendado">Recomendado</option>
-          </select>
-        </label>
-        <label>
-          Gênero:<br />
-          <input id="input-genero" type="text" required />
-        </label>
-        <label>
-          Ano:<br />
-          <input id="input-ano" type="text" required />
-        </label>
-        <label>
-          Duração:<br />
-          <input id="input-duracao" type="text" required />
-        </label>
-        <label>
-          Classificação:<br />
-          <input id="input-classificacao" type="text" required />
-        </label>
-        <label>
-          Sinopse:<br />
-          <textarea id="input-sinopse" rows="4" required></textarea>
-        </label>
-        <label>
-          Link da Capa (imagem):<br />
-          <input id="input-capa" type="url" required />
-        </label>
-        <label>
-          Link do Trailer (embed YouTube):<br />
-          <input id="input-trailer" type="url" />
-        </label>
-
-        <fieldset>
-          <legend>Elenco</legend>
-          <div id="elenco-list"></div>
-          <button type="button" id="btn-add-ator">Adicionar Ator</button>
-        </fieldset>
-
-        <fieldset id="temporadas-fieldset" style="display:none;">
-          <legend>Temporadas e Episódios</legend>
-          <div id="temporadas-list"></div>
-          <button type="button" id="btn-add-temporada">Adicionar Temporada</button>
-        </fieldset>
-
-        <label>
-          Link para Assistir:<br />
-          <input id="input-link-assistir" type="url" />
-        </label>
-
-        <button type="submit">Salvar</button>
-        <button type="button" id="btn-cancelar">Cancelar</button>
-        <p id="form-msg" class="error"></p>
-      </form>
-    </section>
-  </div>
+<table>
+  <thead>
+    <tr><th>Título</th><th>Categoria</th><th>Ações</th></tr>
+  </thead>
+  <tbody id="listaConteudo">
+    <tr><td colspan="3">Carregando...</td></tr>
+  </tbody>
+</table>
 
 <script>
-  // Configuração Firebase
+  // Config Firebase
   const firebaseConfig = {
     apiKey: "AIzaSyBHIc2E4XwRO5FXo4uHlTQVRArOis73MjE",
     authDomain: "projeto-deus-yato-928.firebaseapp.com",
@@ -213,361 +105,126 @@
     appId: "1:790408726854:android:e2f0de7b7d5dba96b0fd47"
   };
   firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
   const db = firebase.firestore();
 
-  // DOM
-  const loginContainer = document.getElementById('login-container');
-  const adminContainer = document.getElementById('admin-container');
-  const loginMsg = document.getElementById('login-msg');
-  const btnLogin = document.getElementById('btn-login');
-  const btnLogout = document.getElementById('btn-logout');
-  const conteudoLista = document.getElementById('conteudo-lista');
-  const filterCategory = document.getElementById('filter-category');
-  const btnAddNew = document.getElementById('btn-add-new');
-  const formSection = document.getElementById('form-section');
-  const formTitle = document.getElementById('form-title');
-  const conteudoForm = document.getElementById('conteudo-form');
-  const btnCancelar = document.getElementById('btn-cancelar');
-  const formMsg = document.getElementById('form-msg');
+  const form = document.getElementById('formConteudo');
+  const lista = document.getElementById('listaConteudo');
 
-  // Inputs form
-  const inputDocId = document.getElementById('doc-id');
-  const inputTitulo = document.getElementById('input-titulo');
-  const inputCategoria = document.getElementById('input-categoria');
-  const inputGenero = document.getElementById('input-genero');
-  const inputAno = document.getElementById('input-ano');
-  const inputDuracao = document.getElementById('input-duracao');
-  const inputClassificacao = document.getElementById('input-classificacao');
-  const inputSinopse = document.getElementById('input-sinopse');
-  const inputCapa = document.getElementById('input-capa');
-  const inputTrailer = document.getElementById('input-trailer');
-  const inputLinkAssistir = document.getElementById('input-link-assistir');
-
-  // Elenco e temporadas
-  const elencoListDiv = document.getElementById('elenco-list');
-  const btnAddAtor = document.getElementById('btn-add-ator');
-  const temporadasFieldset = document.getElementById('temporadas-fieldset');
-  const temporadasListDiv = document.getElementById('temporadas-list');
-  const btnAddTemporada = document.getElementById('btn-add-temporada');
-
-  let elenco = [];
-  let temporadas = [];
-
-  // Função para mostrar/ocultar temporadas baseado na categoria
-  inputCategoria.addEventListener('change', () => {
-    if (inputCategoria.value === 'serie') {
-      temporadasFieldset.style.display = 'block';
-    } else {
-      temporadasFieldset.style.display = 'none';
-      temporadas = [];
-      renderTemporadas();
-    }
-  });
-
-  // Autenticação
-  auth.onAuthStateChanged(user => {
-    if (user) {
-      loginContainer.classList.add('hidden');
-      adminContainer.classList.remove('hidden');
-      carregarConteudos();
-    } else {
-      loginContainer.classList.remove('hidden');
-      adminContainer.classList.add('hidden');
-    }
-  });
-
-  btnLogin.onclick = () => {
-    const email = document.getElementById('email').value.trim();
-    const senha = document.getElementById('password').value.trim();
-    loginMsg.textContent = '';
-    if (!email || !senha) {
-      loginMsg.textContent = 'Preencha email e senha.';
-      return;
-    }
-    auth.signInWithEmailAndPassword(email, senha)
-      .catch(err => {
-        loginMsg.textContent = 'Erro: ' + err.message;
-      });
-  };
-
-  btnLogout.onclick = () => {
-    auth.signOut();
-  };
-
-  btnAddNew.onclick = () => {
-    formTitle.textContent = 'Novo Conteúdo';
-    conteudoForm.reset();
-    inputDocId.value = '';
-    elenco = [];
-    temporadas = [];
-    renderElenco();
-    renderTemporadas();
-    formMsg.textContent = '';
-    formSection.classList.remove('hidden');
-    window.scrollTo(0, 0);
-  };
-
-  btnCancelar.onclick = () => {
-    formSection.classList.add('hidden');
-    formMsg.textContent = '';
-  };
-
-  // Carregar e mostrar lista, com filtro
-  function carregarConteudos() {
-    conteudoLista.innerHTML = '<tr><td colspan="3">Carregando...</td></tr>';
-    const categoriaFiltro = filterCategory.value;
-    let query = db.collection('conteudo').orderBy('titulo');
-    query.get().then(snapshot => {
-      if (snapshot.empty) {
-        conteudoLista.innerHTML = '<tr><td colspan="3">Nenhum conteúdo cadastrado.</td></tr>';
-        return;
-      }
-      conteudoLista.innerHTML = '';
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        if (categoriaFiltro !== 'todos' && data.categoria !== categoriaFiltro) return;
-        conteudoLista.innerHTML += `
-          <tr>
-            <td>${data.titulo}</td>
-            <td>${data.categoria}</td>
-            <td>
-              <button onclick="editarConteudo('${doc.id}')">Editar</button>
-              <button onclick="deletarConteudo('${doc.id}')">Deletar</button>
-            </td>
-          </tr>
-        `;
-      });
-      if (conteudoLista.innerHTML.trim() === '') {
-        conteudoLista.innerHTML = '<tr><td colspan="3">Nenhum conteúdo para essa categoria.</td></tr>';
-      }
-    }).catch(e => {
-      conteudoLista.innerHTML = '<tr><td colspan="3">Erro ao carregar conteúdos.</td></tr>';
-    });
+  function limparForm() {
+    form.reset();
+    document.getElementById('docId').value = '';
   }
 
-  filterCategory.addEventListener('change', carregarConteudos);
+  // Mostrar todos os conteúdos da coleção 'conteudo'
+  function carregarConteudos() {
+    lista.innerHTML = '<tr><td colspan="3">Carregando...</td></tr>';
+    db.collection('conteudo').orderBy('titulo').get()
+      .then(snapshot => {
+        if (snapshot.empty) {
+          lista.innerHTML = '<tr><td colspan="3">Nenhum conteúdo cadastrado.</td></tr>';
+          return;
+        }
+        lista.innerHTML = '';
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          lista.innerHTML += `
+            <tr>
+              <td>${data.titulo}</td>
+              <td>${data.categoria}</td>
+              <td>
+                <button onclick="editar('${doc.id}')">Editar</button>
+                <button onclick="deletar('${doc.id}')">Deletar</button>
+              </td>
+            </tr>
+          `;
+        });
+      })
+      .catch(() => {
+        lista.innerHTML = '<tr><td colspan="3">Erro ao carregar dados.</td></tr>';
+      });
+  }
 
   // Editar conteúdo
-  window.editarConteudo = (id) => {
-    db.collection('conteudo').doc(id).get().then(doc => {
-      if (!doc.exists) {
-        alert('Conteúdo não encontrado');
-        return;
-      }
-      const data = doc.data();
-      formTitle.textContent = 'Editar Conteúdo';
-      inputDocId.value = id;
-      inputTitulo.value = data.titulo || '';
-      inputCategoria.value = data.categoria || 'filme';
-      inputGenero.value = data.genero || '';
-      inputAno.value = data.ano || '';
-      inputDuracao.value = data.duracao || '';
-      inputClassificacao.value = data.classificacao || '';
-      inputSinopse.value = data.sinopse || '';
-      inputCapa.value = data.capa || '';
-      inputTrailer.value = data.trailer || '';
-      inputLinkAssistir.value = data.linkAssistir || '';
-
-      elenco = Array.isArray(data.elenco) ? data.elenco.slice() : [];
-      temporadas = Array.isArray(data.temporadas) ? data.temporadas.slice() : [];
-
-      renderElenco();
-
-      if (inputCategoria.value === 'serie') {
-        temporadasFieldset.style.display = 'block';
-      } else {
-        temporadasFieldset.style.display = 'none';
-        temporadas = [];
-      }
-      renderTemporadas();
-
-      formMsg.textContent = '';
-      formSection.classList.remove('hidden');
-      window.scrollTo(0, 0);
-    }).catch(() => alert('Erro ao carregar conteúdo.'));
-  };
+  function editar(id) {
+    db.collection('conteudo').doc(id).get()
+      .then(doc => {
+        if (!doc.exists) {
+          alert('Conteúdo não encontrado');
+          return;
+        }
+        const d = doc.data();
+        document.getElementById('docId').value = id;
+        document.getElementById('titulo').value = d.titulo || '';
+        document.getElementById('categoria').value = d.categoria || 'filme';
+        document.getElementById('genero').value = d.genero || '';
+        document.getElementById('ano').value = d.ano || '';
+        document.getElementById('duracao').value = d.duracao || '';
+        document.getElementById('classificacao').value = d.classificacao || '';
+        document.getElementById('sinopse').value = d.sinopse || '';
+        document.getElementById('capa').value = d.capa || '';
+        document.getElementById('trailer').value = d.trailer || '';
+        document.getElementById('linkAssistir').value = d.linkAssistir || '';
+      })
+      .catch(() => alert('Erro ao carregar conteúdo'));
+  }
 
   // Deletar conteúdo
-  window.deletarConteudo = (id) => {
-    if (confirm('Deseja realmente deletar este conteúdo?')) {
+  function deletar(id) {
+    if (confirm('Quer deletar este conteúdo?')) {
       db.collection('conteudo').doc(id).delete()
         .then(() => carregarConteudos())
-        .catch(() => alert('Erro ao deletar conteúdo.'));
+        .catch(() => alert('Erro ao deletar'));
     }
-  };
-
-  // Elenco
-  function renderElenco() {
-    elencoListDiv.innerHTML = '';
-    elenco.forEach((ator, i) => {
-      const div = document.createElement('div');
-      div.innerHTML = `
-        <input type="text" value="${ator}" data-index="${i}" placeholder="Nome do ator" />
-        <button data-index="${i}">Remover</button>
-      `;
-      elencoListDiv.appendChild(div);
-    });
-
-    elencoListDiv.querySelectorAll('input').forEach(input => {
-      input.oninput = e => {
-        const i = +e.target.dataset.index;
-        elenco[i] = e.target.value;
-      };
-    });
-
-    elencoListDiv.querySelectorAll('button').forEach(btn => {
-      btn.onclick = e => {
-        const i = +e.target.dataset.index;
-        elenco.splice(i, 1);
-        renderElenco();
-      };
-    });
   }
 
-  btnAddAtor.onclick = () => {
-    elenco.push('');
-    renderElenco();
-  };
-
-  // Temporadas e episódios
-  function renderTemporadas() {
-    temporadasListDiv.innerHTML = '';
-    temporadas.forEach((temp, i) => {
-      const div = document.createElement('div');
-      div.innerHTML = `
-        <h3>Temporada ${temp.numero}</h3>
-        <button data-index="${i}" class="remove-temporada" style="background:#b33;">Remover Temporada</button>
-        <div class="episodios-list"></div>
-        <button data-index="${i}" class="add-episodio" style="margin-top:5px;">Adicionar Episódio</button>
-      `;
-      temporadasListDiv.appendChild(div);
-
-      const episodiosList = div.querySelector('.episodios-list');
-
-      temp.episodios.forEach((ep, j) => {
-        const epDiv = document.createElement('div');
-        epDiv.innerHTML = `
-          <input type="text" placeholder="Título do episódio" value="${ep.titulo}" data-temp="${i}" data-ep="${j}" class="ep-titulo" />
-          <input type="text" placeholder="Duração" value="${ep.duracao}" data-temp="${i}" data-ep="${j}" class="ep-duracao" />
-          <input type="url" placeholder="Link para assistir" value="${ep.link}" data-temp="${i}" data-ep="${j}" class="ep-link" />
-          <button data-temp="${i}" data-ep="${j}" class="remove-episodio" style="background:#b33;">Remover</button>
-        `;
-        episodiosList.appendChild(epDiv);
-      });
-    });
-
-    // Eventos remover temporada
-    temporadasListDiv.querySelectorAll('.remove-temporada').forEach(btn => {
-      btn.onclick = e => {
-        const i = +e.target.dataset.index;
-        temporadas.splice(i, 1);
-        renderTemporadas();
-      };
-    });
-
-    // Eventos adicionar episódio
-    temporadasListDiv.querySelectorAll('.add-episodio').forEach(btn => {
-      btn.onclick = e => {
-        const i = +e.target.dataset.index;
-        temporadas[i].episodios.push({ titulo: '', duracao: '', link: '' });
-        renderTemporadas();
-      };
-    });
-
-    // Eventos remover episódio
-    temporadasListDiv.querySelectorAll('.remove-episodio').forEach(btn => {
-      btn.onclick = e => {
-        const tempI = +e.target.dataset.temp;
-        const epI = +e.target.dataset.ep;
-        temporadas[tempI].episodios.splice(epI, 1);
-        renderTemporadas();
-      };
-    });
-
-    // Eventos editar episódio
-    temporadasListDiv.querySelectorAll('.ep-titulo, .ep-duracao, .ep-link').forEach(input => {
-      input.oninput = e => {
-        const tempI = +e.target.dataset.temp;
-        const epI = +e.target.dataset.ep;
-        const prop = e.target.classList.contains('ep-titulo') ? 'titulo' :
-                     e.target.classList.contains('ep-duracao') ? 'duracao' : 'link';
-        temporadas[tempI].episodios[epI][prop] = e.target.value;
-      };
-    });
-  }
-
-  btnAddTemporada.onclick = () => {
-    temporadas.push({ numero: temporadas.length + 1, episodios: [] });
-    renderTemporadas();
-  };
-
-  // Form submit
-  conteudoForm.onsubmit = e => {
+  // Salvar novo ou editar existente
+  form.addEventListener('submit', e => {
     e.preventDefault();
-    formMsg.textContent = '';
-
-    // Validação simples
-    if (!inputTitulo.value.trim()) {
-      formMsg.textContent = 'Título é obrigatório.';
-      return;
-    }
-    if (!inputGenero.value.trim()) {
-      formMsg.textContent = 'Gênero é obrigatório.';
-      return;
-    }
-
-    // Atualizar temporadas para números corretos
-    temporadas.forEach((temp, i) => temp.numero = i + 1);
-
-    // Preparar dados para salvar
+    const id = document.getElementById('docId').value;
     const dados = {
-      titulo: inputTitulo.value.trim(),
-      categoria: inputCategoria.value,
-      genero: inputGenero.value.trim(),
-      ano: inputAno.value.trim(),
-      duracao: inputDuracao.value.trim(),
-      classificacao: inputClassificacao.value.trim(),
-      sinopse: inputSinopse.value.trim(),
-      capa: inputCapa.value.trim(),
-      trailer: inputTrailer.value.trim(),
-      elenco: elenco.filter(a => a.trim() !== ''),
-      linkAssistir: inputLinkAssistir.value.trim()
+      titulo: document.getElementById('titulo').value.trim(),
+      categoria: document.getElementById('categoria').value,
+      genero: document.getElementById('genero').value.trim(),
+      ano: document.getElementById('ano').value.trim(),
+      duracao: document.getElementById('duracao').value.trim(),
+      classificacao: document.getElementById('classificacao').value.trim(),
+      sinopse: document.getElementById('sinopse').value.trim(),
+      capa: document.getElementById('capa').value.trim(),
+      trailer: document.getElementById('trailer').value.trim(),
+      linkAssistir: document.getElementById('linkAssistir').value.trim()
     };
 
-    if (inputCategoria.value === 'serie') {
-      dados.temporadas = temporadas;
-    } else {
-      dados.temporadas = [];
+    if (!dados.titulo || !dados.categoria || !dados.genero) {
+      alert('Preencha título, categoria e gênero');
+      return;
     }
 
-    // Salvar no Firestore
-    if (inputDocId.value) {
-      db.collection('conteudo').doc(inputDocId.value).set(dados)
+    if (id) {
+      db.collection('conteudo').doc(id).set(dados)
         .then(() => {
-          formMsg.className = 'success';
-          formMsg.textContent = 'Conteúdo atualizado com sucesso!';
+          alert('Conteúdo atualizado');
+          limparForm();
           carregarConteudos();
-          formSection.classList.add('hidden');
         })
-        .catch(() => {
-          formMsg.className = 'error';
-          formMsg.textContent = 'Erro ao atualizar conteúdo.';
-        });
+        .catch(() => alert('Erro ao atualizar'));
     } else {
       db.collection('conteudo').add(dados)
         .then(() => {
-          formMsg.className = 'success';
-          formMsg.textContent = 'Conteúdo adicionado com sucesso!';
+          alert('Conteúdo adicionado');
+          limparForm();
           carregarConteudos();
-          formSection.classList.add('hidden');
         })
-        .catch(() => {
-          formMsg.className = 'error';
-          formMsg.textContent = 'Erro ao adicionar conteúdo.';
-        });
+        .catch(() => alert('Erro ao adicionar'));
     }
-  };
+  });
+
+  document.getElementById('btnLimpar').addEventListener('click', limparForm);
+
+  carregarConteudos();
+
+  // Tornar as funções editar e deletar globais para funcionar nos onclick
+  window.editar = editar;
+  window.deletar = deletar;
 </script>
 
 </body>
