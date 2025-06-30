@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Gerenciar Conteúdo</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -14,41 +14,53 @@
       background: #111;
       color: white;
       font-family: Arial, sans-serif;
-      margin: 0;
       padding: 20px;
     }
 
     h1 {
       text-align: center;
       color: #e50914;
+      font-size: 2rem;
+      margin-bottom: 30px;
     }
 
-    section {
-      margin-bottom: 40px;
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 30px;
     }
 
     form {
-      display: flex;
-      flex-direction: column;
-      max-width: 400px;
       background: #222;
       padding: 20px;
       border-radius: 10px;
+      display: flex;
+      flex-direction: column;
     }
 
-    input, select, button {
-      margin-bottom: 10px;
+    form input, form select, form button {
+      margin-bottom: 15px;
       padding: 10px;
-      font-size: 1rem;
       border: none;
       border-radius: 5px;
+      font-size: 1rem;
     }
 
-    button {
+    form button {
       background: #e50914;
       color: white;
       font-weight: bold;
       cursor: pointer;
+    }
+
+    section {
+      margin-bottom: 30px;
+    }
+
+    section h2 {
+      margin-bottom: 10px;
+      border-bottom: 1px solid #333;
+      padding-bottom: 5px;
     }
 
     ul {
@@ -57,92 +69,73 @@
     }
 
     li {
-      background: #333;
+      background: #1c1c1c;
       padding: 10px;
       margin-bottom: 5px;
       border-radius: 5px;
+    }
+
+    @media(max-width: 768px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
 <body>
   <h1>Gerenciar Conteúdo</h1>
 
-  <section>
-    <h2>Adicionar Filme / Série</h2>
+  <div class="container">
     <form id="formConteudo">
-      <input type="text" id="titulo" placeholder="Título" required>
-      <input type="text" id="capa" placeholder="URL da Capa" required>
+      <h2>Adicionar</h2>
+      <input type="text" id="titulo" placeholder="Título" required />
+      <input type="text" id="capa" placeholder="URL da Capa" required />
       <select id="tipo">
         <option value="filmes">Filme</option>
         <option value="series">Série</option>
+        <option value="lancamentos">Lançamento</option>
+        <option value="destaques">Destaque</option>
+        <option value="episodios">Novo Episódio</option>
+        <option value="slides">Slide</option>
       </select>
-      <button type="submit">Adicionar</button>
+      <button type="submit">Salvar</button>
     </form>
-  </section>
 
-  <section>
-    <h2>Filmes</h2>
-    <ul id="listaFilmes"></ul>
-  </section>
-
-  <section>
-    <h2>Séries</h2>
-    <ul id="listaSeries"></ul>
-  </section>
-
-  <section>
-    <h2>Usuários</h2>
-    <ul id="listaUsuarios"></ul>
-  </section>
+    <div>
+      <section><h2>Filmes</h2><ul id="listaFilmes"></ul></section>
+      <section><h2>Séries</h2><ul id="listaSeries"></ul></section>
+      <section><h2>Destaques</h2><ul id="listaDestaques"></ul></section>
+      <section><h2>Novos Episódios</h2><ul id="listaEpisodios"></ul></section>
+      <section><h2>Lançamentos</h2><ul id="listaLancamentos"></ul></section>
+      <section><h2>Slides</h2><ul id="listaSlides"></ul></section>
+    </div>
+  </div>
 
   <script>
     firebase.auth().onAuthStateChanged(user => {
-      if (user) {
-        carregarFilmes();
-        carregarSeries();
-        carregarUsuarios();
-      } else {
-        window.location.href = "login.html";
-      }
+      if (user) carregarListas();
+      else window.location.href = "login.html";
     });
 
-    function carregarFilmes() {
-      const lista = document.getElementById("listaFilmes");
-      firebase.database().ref("filmes").once("value").then(snapshot => {
-        lista.innerHTML = "";
+    function carregar(ref, ul) {
+      firebase.database().ref(ref).once("value").then(snapshot => {
+        ul.innerHTML = "";
         snapshot.forEach(child => {
-          const data = child.val();
+          const item = child.val();
           const li = document.createElement("li");
-          li.textContent = data.titulo;
-          lista.appendChild(li);
+          li.textContent = item.titulo || item.capa || "Sem título";
+          ul.appendChild(li);
         });
       });
     }
 
-    function carregarSeries() {
-      const lista = document.getElementById("listaSeries");
-      firebase.database().ref("series").once("value").then(snapshot => {
-        lista.innerHTML = "";
-        snapshot.forEach(child => {
-          const data = child.val();
-          const li = document.createElement("li");
-          li.textContent = data.titulo;
-          lista.appendChild(li);
-        });
-      });
-    }
-
-    function carregarUsuarios() {
-      const lista = document.getElementById("listaUsuarios");
-      firebase.database().ref("users").once("value").then(snapshot => {
-        lista.innerHTML = "";
-        snapshot.forEach(child => {
-          const data = child.val();
-          const li = document.createElement("li");
-          li.textContent = data.email || "Usuário";
-          lista.appendChild(li);
-        });
-      });
+    function carregarListas() {
+      carregar("filmes", document.getElementById("listaFilmes"));
+      carregar("series", document.getElementById("listaSeries"));
+      carregar("destaques", document.getElementById("listaDestaques"));
+      carregar("episodios", document.getElementById("listaEpisodios"));
+      carregar("lancamentos", document.getElementById("listaLancamentos"));
+      carregar("slides", document.getElementById("listaSlides"));
     }
 
     document.getElementById("formConteudo").addEventListener("submit", function(e) {
@@ -150,13 +143,11 @@
       const titulo = document.getElementById("titulo").value;
       const capa = document.getElementById("capa").value;
       const tipo = document.getElementById("tipo").value;
-      const ref = firebase.database().ref(tipo);
-      const novo = ref.push();
-      novo.set({ titulo, capa }).then(() => {
+      const ref = firebase.database().ref(tipo).push();
+      ref.set({ titulo, capa }).then(() => {
         alert("Adicionado com sucesso!");
-        document.getElementById("formConteudo").reset();
-        carregarFilmes();
-        carregarSeries();
+        e.target.reset();
+        carregarListas();
       });
     });
   </script>
