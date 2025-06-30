@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Gerenciar Conteúdo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <script src="firebase-config.js"></script>
+  <style>
+    body {
+      background: #111;
+      color: white;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #e50914;
+    }
+
+    section {
+      margin-bottom: 40px;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      max-width: 400px;
+      background: #222;
+      padding: 20px;
+      border-radius: 10px;
+    }
+
+    input, select, button {
+      margin-bottom: 10px;
+      padding: 10px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 5px;
+    }
+
+    button {
+      background: #e50914;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    li {
+      background: #333;
+      padding: 10px;
+      margin-bottom: 5px;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Gerenciar Conteúdo</h1>
+
+  <section>
+    <h2>Adicionar Filme / Série</h2>
+    <form id="formConteudo">
+      <input type="text" id="titulo" placeholder="Título" required>
+      <input type="text" id="capa" placeholder="URL da Capa" required>
+      <select id="tipo">
+        <option value="filmes">Filme</option>
+        <option value="series">Série</option>
+      </select>
+      <button type="submit">Adicionar</button>
+    </form>
+  </section>
+
+  <section>
+    <h2>Filmes</h2>
+    <ul id="listaFilmes"></ul>
+  </section>
+
+  <section>
+    <h2>Séries</h2>
+    <ul id="listaSeries"></ul>
+  </section>
+
+  <section>
+    <h2>Usuários</h2>
+    <ul id="listaUsuarios"></ul>
+  </section>
+
+  <script>
+    firebase.auth().onAuthStateChanged(user => {
+      if (user) {
+        carregarFilmes();
+        carregarSeries();
+        carregarUsuarios();
+      } else {
+        window.location.href = "login.html";
+      }
+    });
+
+    function carregarFilmes() {
+      const lista = document.getElementById("listaFilmes");
+      firebase.database().ref("filmes").once("value").then(snapshot => {
+        lista.innerHTML = "";
+        snapshot.forEach(child => {
+          const data = child.val();
+          const li = document.createElement("li");
+          li.textContent = data.titulo;
+          lista.appendChild(li);
+        });
+      });
+    }
+
+    function carregarSeries() {
+      const lista = document.getElementById("listaSeries");
+      firebase.database().ref("series").once("value").then(snapshot => {
+        lista.innerHTML = "";
+        snapshot.forEach(child => {
+          const data = child.val();
+          const li = document.createElement("li");
+          li.textContent = data.titulo;
+          lista.appendChild(li);
+        });
+      });
+    }
+
+    function carregarUsuarios() {
+      const lista = document.getElementById("listaUsuarios");
+      firebase.database().ref("users").once("value").then(snapshot => {
+        lista.innerHTML = "";
+        snapshot.forEach(child => {
+          const data = child.val();
+          const li = document.createElement("li");
+          li.textContent = data.email || "Usuário";
+          lista.appendChild(li);
+        });
+      });
+    }
+
+    document.getElementById("formConteudo").addEventListener("submit", function(e) {
+      e.preventDefault();
+      const titulo = document.getElementById("titulo").value;
+      const capa = document.getElementById("capa").value;
+      const tipo = document.getElementById("tipo").value;
+      const ref = firebase.database().ref(tipo);
+      const novo = ref.push();
+      novo.set({ titulo, capa }).then(() => {
+        alert("Adicionado com sucesso!");
+        document.getElementById("formConteudo").reset();
+        carregarFilmes();
+        carregarSeries();
+      });
+    });
+  </script>
+</body>
+</html>
