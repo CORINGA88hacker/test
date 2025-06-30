@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin - Gerenciar Conteúdo</title>
+  <link rel="stylesheet" href="admin-style.css" />
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+</head>
+<body>
+  <div id="login-section">
+    <h2>Login Admin</h2>
+    <input type="email" id="email" placeholder="Email" />
+    <input type="password" id="password" placeholder="Senha" />
+    <button id="btn-login">Entrar</button>
+    <p id="login-msg" class="msg"></p>
+  </div>
+
+  <div id="admin-section" style="display:none;">
+    <header>
+      <h1>Admin - Gerenciar Conteúdo</h1>
+      <button id="btn-logout">Sair</button>
+    </header>
+
+    <section id="conteudo-lista">
+      <h2>Lista de Conteúdos</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Título</th>
+            <th>Categoria</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="lista-itens"></tbody>
+      </table>
+      <button id="btn-novo">Adicionar Novo</button>
+    </section>
+
+    <section id="formulario" style="display:none;">
+      <h2 id="form-titulo">Novo Conteúdo</h2>
+      <form id="conteudo-form">
+        <label>Título:<br /><input type="text" id="titulo" required /></label><br />
+        <label>Categoria:<br />
+          <select id="categoria" required>
+            <option value="filme">Filme</option>
+            <option value="serie">Série</option>
+            <option value="anime">Anime</option>
+            <option value="lancamento">Lançamento</option>
+            <option value="episodio">Episódio</option>
+            <option value="recomendado">Recomendado</option>
+          </select>
+        </label><br />
+        <label>Gênero:<br /><input type="text" id="genero" required /></label><br />
+        <label>Ano:<br /><input type="text" id="ano" required /></label><br />
+        <label>Duração:<br /><input type="text" id="duracao" required /></label><br />
+        <label>Classificação:<br /><input type="text" id="classificacao" required /></label><br />
+        <label>Sinopse:<br /><textarea id="sinopse" rows="4" required></textarea></label><br />
+        <label>Link da Capa (imagem):<br /><input type="url" id="capa" required /></label><br />
+        <label>Link do Trailer (embed YouTube):<br /><input type="url" id="trailer" /></label><br />
+
+        <fieldset id="elenco-fieldset">
+          <legend>Elenco</legend>
+          <div id="elenco-list"></div>
+          <button type="button" id="btn-add-ator">Adicionar Ator</button>
+        </fieldset>
+
+        <fieldset id="temporadas-fieldset" style="display:none;">
+          <legend>Temporadas e Episódios</legend>
+          <div id="temporadas-list"></div>
+          <button type="button" id="btn-add-temporada">Adicionar Temporada</button>
+        </fieldset>
+
+        <label>Link para Assistir:<br /><input type="url" id="linkAssistir" /></label><br />
+
+        <input type="hidden" id="docId" />
+        <button type="submit" id="btn-salvar">Salvar</button>
+        <button type="button" id="btn-cancelar">Cancelar</button>
+      </form>
+    </section>
+  </div>
+
+  <script>
+    // Config Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyBHIc2E4XwRO5FXo4uHlTQVRArOis73MjE",
+      authDomain: "projeto-deus-yato-928.firebaseapp.com",
+      projectId: "projeto-deus-yato-928",
+      storageBucket: "projeto-deus-yato-928.appspot.com",
+      messagingSenderId: "790408726854",
+      appId: "1:790408726854:android:e2f0de7b7d5dba96b0fd47"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // DOM references
+    const loginSection = document.getElementById('login-section');
+    const adminSection = document.getElementById('admin-section');
+    const loginMsg = document.getElementById('login-msg');
+    const btnLogin = document.getElementById('btn-login');
+    const btnLogout = document.getElementById('btn-logout');
+    const listaItens = document.getElementById('lista-itens');
+    const btnNovo = document.getElementById('btn-novo');
+    const formulario = document.getElementById('formulario');
+    const formTitulo = document.getElementById('form-titulo');
+    const conteudoForm = document.getElementById('conteudo-form');
+    const btnCancelar = document.getElementById('btn-cancelar');
+
+    // Inputs do formulário
+    const inputTitulo = document.getElementById('titulo');
+    const inputCategoria = document.getElementById('categoria');
+    const inputGenero = document.getElementById('genero');
+    const inputAno = document.getElementById('ano');
+    const inputDuracao = document.getElementById('duracao');
+    const inputClassificacao = document.getElementById('classificacao');
+    const inputSinopse = document.getElementById('sinopse');
+    const inputCapa = document.getElementById('capa');
+    const inputTrailer = document.getElementById('trailer');
+    const inputLinkAssistir = document.getElementById('linkAssistir');
+    const inputDocId = document.getElementById('docId');
+
+    // Elenco e Temporadas DOM
+    const elencoListDiv = document.getElementById('elenco-list');
+    const btnAddAtor = document.getElementById('btn-add-ator');
+    const temporadasFieldset = document.getElementById('temporadas-fieldset');
+    const temporadasListDiv = document.getElementById('temporadas-list');
+    const btnAddTemporada = document.getElementById('btn-add-temporada');
+
+    // Estado
+    let elenco = [];
+    let temporadas = [];
+
+    // Autenticação
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        loginSection.style.display = 'none';
+        adminSection.style.display = 'block';
+        carregarListaConteudo();
+      } else {
+        loginSection.style.display = 'block';
+        adminSection.style.display = 'none';
+      }
+    });
+
+    btnLogin.onclick = () => {
+      const email = document.getElementById('email').value.trim();
+      const senha = document.getElementById('password').value.trim();
+      loginMsg.textContent = '';
+      if (!email || !senha) {
+        loginMsg.textContent = 'Preencha email e senha.';
+        return;
+      }
+      auth.signInWithEmailAndPassword(email, senha)
+        .catch(err => {
+          loginMsg.textContent = 'Erro: ' + err.message;
+        });
+    };
+
+    btnLogout.onclick = () => {
+      auth.signOut();
+    };
+
+    // Carregar lista de conteúdos
+    function carregarListaConteudo() {
+      listaItens.innerHTML = '<tr><td colspan="3">Carregando...</td></tr>';
+      db.collection('conteudo').orderBy('titulo').get()
+        .then(snapshot => {
+          if (snapshot.empty) {
+            listaItens.innerHTML = '<tr><td colspan="3">Nenhum conteúdo encontrado.</td></tr>';
+            return;
+          }
+          listaItens.innerHTML = '';
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            listaItens.innerHTML += `
+              <tr>
+                <td>${data.titulo}</td>
+                <td>${data.categoria}</td>
+                <td>
+                  <button onclick="editarConteudo('${doc.id}')">Editar</button>
+                  <button onclick="deletarConteudo('${doc.id}')">Deletar</button>
+                </td>
+              </tr>
+            `;
+          });
+        });
+    }
+
+    // Editar conteúdo
+    window.editarConteudo = (id) => {
+      db.collection('conteudo').doc(id).get()
+        .then(doc => {
+          if (!doc.exists) {
+            alert('Conteúdo não encontrado');
+            return;
+          }
+          const data = doc.data();
+          formTitulo.textContent = 'Editar Conteúdo';
+          formulario.style.display = 'block';
+          btnNovo.style.display = 'none';
+          inputDocId.value = id;
+
+          // Preencher inputs
+          inputTitulo.value = data.titulo || '';
+          inputCategoria.value = data.categoria || 'filme';
+          inputGenero.value = data.genero || '';
+          inputAno.value = data.ano || '';
+          inputDuracao.value = data.duracao || '';
+          inputClassificacao.value = data.classificacao || '';
+          inputSinopse.value = data.sinopse || '';
+          inputCapa.value = data.capa || '';
+          inputTrailer.value = data.trailer || '';
+          inputLinkAssistir.value = data.linkAssistir || '';
+
+          // Elenco
+          elenco = Array.isArray(data.elenco) ? data.elenco.slice() : [];
+          renderElenco();
+
+          // Temporadas (mostrar só se categoria for série)
+          temporadas = Array.isArray(data.temporadas) ? data.temporadas.slice() : [];
+          if(inputCategoria.value === 'serie') {
+            temporadasFieldset.style.display = 'block';
+          } else {
+            temporadasFieldset.style.display = 'none';
+          }
+          renderTemporadas();
+        });
+    };
+
+    // Deletar conteúdo
+    window.deletarConteudo = (id) => {
+      if(confirm('Deseja realmente deletar este conteúdo?')) {
+        db.collection('conteudo').doc(id).delete()
+          .then(() => carregarListaConteudo());
+      }
+    };
+
+    // Novo conteúdo
+    btnNovo.onclick = () => {
+      formulario.style.display = 'block';
+      btnNovo.style.display = 'none';
+      formTitulo.textContent = 'Novo Conteúdo';
+      conteudoForm.reset();
+      inputDocId.value = '';
+      elenco = [];
+      temporadas = [];
+      renderElenco();
+      temporadasFieldset.style.display = 'none';
+      renderTemporadas();
+    };
+
+    // Cancelar
+    btnCancelar.onclick = () => {
+      formulario.style.display = 'none';
+      btnNovo.style.display = 'block';
+    };
+
+    // Render elenco
+    function renderElenco() {
+      elencoListDiv.innerHTML = '';
+      elenco.forEach((ator, i) => {
+        const div = document.createElement('div');
+        div.classList.add('ator-item');
+        div.innerHTML = `
+          <input type="text" value="${ator}" data-index="${i}" />
+          <button type="button" data-index="${i}">Remover</button>
+        `;
+        elencoListDiv.appendChild(div);
+      });
+      // Eventos inputs e botões remover
+      elencoListDiv.querySelectorAll('input').forEach(input => {
+        input.oninput = e => {
+          elenco[e.target.dataset.index] = e.target.value;
+        };
+      });
+      elencoListDiv.querySelectorAll('button').forEach(btn => {
+        btn.onclick = e => {
+          const idx = e.target.dataset.index;
+          elenco.splice(idx, 1);
+          renderElenco();
+        };
+      });
+    }
+
+    btnAddAtor.onclick = () => {
+      elenco.push('');
+      renderElenco();
+    };
+
+    // Render temporadas e episódios
+    function renderTemporadas() {
+      temporadasListDiv.innerHTML = '';
+      temporadas.forEach((temporada, i) => {
+        const divTemporada = document.createElement('div');
+        divTemporada.classList.add('temporada');
+        divTemporada.innerHTML = `
+          <h4>Temporada ${temporada.numero}</h4>
+          <button type="button" data-index="${i}" class="btn-remove-temporada">Remover Temporada</button>
+          <div class="episodios-list"></div>
+          <button type="button" data-index="${i}" class="btn-add-episodio">Adicionar Episódio</button>
+          <hr/>
+        `;
+        temporadasListDiv.appendChild(divTemporada);
+
+        // Episódios
+        const episodiosListDiv = divTemporada.querySelector('.episodios-list');
+        temporada.episodios.forEach((ep, j) => {
+          const divEp = document.createElement('div');
+          divEp.classList.add('episodio');
+          divEp.innerHTML = `
+            <input type="text" placeholder="Título do episódio" value="${ep.titulo}" data-temporada="${i}" data-episodio="${j}" class="ep-titulo" />
+            <input type="text" placeholder="Duração" value="${ep.duracao}" data-temporada="${i}" data-episodio="${j}" class="ep-duracao" />
+            <input type="url" placeholder="Link para assistir" value="${ep.link}" data-temporada="${i}" data-episodio="${j}" class="ep-link" />
+            <button type="button" data-temporada="${i}" data-episodio="${j}" class="btn-remove-episodio">Remover</button>
+          `;
+          episodiosListDiv.appendChild(divEp);
+        });
+      });
+
+      // Eventos remover temporada
+      temporadasListDiv.querySelectorAll('.btn-remove-temporada').forEach(btn => {
+        btn.onclick = e => {
+          const i = e.target.dataset.index;
+          temporadas.splice(i, 1);
+          renderTemporadas();
+        };
+      });
+
+      // Eventos adicionar episódio
+      temporadasListDiv.querySelectorAll('.btn-add-episodio').forEach(btn => {
+        btn.onclick = e => {
+          const i = e.target.dataset.index;
+          temporadas[i].episodios.push({ titulo: '', duracao: '', link: '' });
+          renderTemporadas();
+        };
+      });
+
+      // Eventos inputs episódios
+      temporadasListDiv.querySelectorAll('.ep-titulo').forEach(input => {
+        input.oninput = e => {
+          const i = e.target.dataset.temporada;
+          const j = e.target.dataset.episodio;
+          temporadas[i].episodios[j].titulo = e.target.value;
+        };
+      });
+      temporadasListDiv.querySelectorAll('.ep-duracao').forEach(input => {
+        input.oninput = e => {
+          const i = e.target.dataset.temporada;
+          const j = e.target.dataset.episodio;
+          temporadas[i].episodios[j].duracao = e.target.value;
+        };
+      });
+      temporadasListDiv.querySelectorAll('.ep-link').forEach(input => {
+        input.oninput = e => {
+          const i = e.target.dataset.temporada;
+          const j = e.target.dataset.episodio;
+          temporadas[i].episodios[j].link = e.target.value;
+        };
+      });
+
+      // Eventos remover episódio
+      temporadasListDiv.querySelectorAll('.btn-remove-episodio').forEach(btn => {
+        btn.onclick = e => {
+          const i = e.target.dataset.temporada;
+          const j = e.target.dataset.episodio;
+          temporadas[i].episodios.splice(j, 1);
+          renderTemporadas();
+        };
+      });
+    }
+
+    btnAddTemporada.onclick = () => {
+      const nextNum = temporadas.length ? Math.max(...temporadas.map(t => t.numero)) + 1 : 1;
+      temporadas.push({ numero: nextNum, episodios: [] });
+      renderTemporadas();
+    };
+
+    // Mostrar ou ocultar temporadas conforme categoria
+    inputCategoria.onchange = () => {
+      if (inputCategoria.value === 'serie') {
+        temporadasFieldset.style.display = 'block';
+      } else {
+        temporadasFieldset.style.display = 'none';
+        temporadas = [];
+        renderTemporadas();
+      }
+    };
+
+    // Salvar conteúdo no Firestore
+    conteudoForm.onsubmit = e => {
+      e.preventDefault();
+
+      // Atualizar elenco removendo vazios
+      elenco = elenco.filter(a => a.trim() !== '');
+
+      // Validar temporada se for série
+      if (inputCategoria.value === 'serie') {
+        temporadas = temporadas.filter(t => t.episodios.length > 0);
+      } else {
+        temporadas = [];
+      }
+
+      const dados = {
+        titulo: inputTitulo.value.trim(),
+        categoria: inputCategoria.value,
+        genero: inputGenero.value.trim(),
+        ano: inputAno.value.trim(),
+        duracao: inputDuracao.value.trim(),
+        classificacao: inputClassificacao.value.trim(),
+        sinopse: inputSinopse.value.trim(),
+        capa: inputCapa.value.trim(),
+        trailer: inputTrailer.value.trim(),
+        elenco: elenco,
+        temporadas: temporadas,
+        linkAssistir: inputLinkAssistir.value.trim()
+      };
+
+      const docId = inputDocId.value;
+
+      if (docId) {
+        db.collection('conteudo').doc(docId).set(dados)
+          .then(() => {
+            alert('Conteúdo atualizado!');
+            formulario.style.display = 'none';
+            btnNovo.style.display = 'block';
+            carregarListaConteudo();
+          })
+          .catch(err => alert('Erro ao salvar: ' + err));
+      } else {
+        db.collection('conteudo').add(dados)
+          .then(() => {
+            alert('Conteúdo adicionado!');
+            formulario.style.display = 'none';
+            btnNovo.style.display = 'block';
+            carregarListaConteudo();
+          })
+          .catch(err => alert('Erro ao salvar: ' + err));
+      }
+    };
+  </script>
+</body>
+</html>
