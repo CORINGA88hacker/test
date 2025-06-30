@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Detalhes do Filme/Série</title>
+  <link rel="stylesheet" href="detalhes-style.css" />
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+</head>
+<body>
+  <header>
+    <a href="index.html" class="voltar">&larr; Voltar</a>
+  </header>
+
+  <main>
+    <div class="container">
+      <div class="imagem-capa">
+        <img id="capa" src="" alt="Capa do filme" />
+      </div>
+
+      <div class="info">
+        <h1 id="titulo">Título</h1>
+        <p class="genero-ano" id="genero-ano">Gênero • Ano • Duração</p>
+        <p class="classificacao" id="classificacao">Classificação: 0+</p>
+        <p class="sinopse" id="sinopse">Sinopse aqui...</p>
+
+        <button id="btn-assistir">Assistir</button>
+
+        <div class="trailer">
+          <h3>Trailer</h3>
+          <iframe
+            id="trailer"
+            width="100%"
+            height="315"
+            src=""
+            frameborder="0"
+            allowfullscreen
+          ></iframe>
+        </div>
+
+        <div class="elenco">
+          <h3>Elenco</h3>
+          <ul id="lista-elenco"></ul>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // Config Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyBHIc2E4XwRO5FXo4uHlTQVRArOis73MjE",
+      authDomain: "projeto-deus-yato-928.firebaseapp.com",
+      projectId: "projeto-deus-yato-928",
+      storageBucket: "projeto-deus-yato-928.appspot.com",
+      messagingSenderId: "790408726854",
+      appId: "1:790408726854:android:e2f0de7b7d5dba96b0fd47"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // Pegar o id do filme da query string
+    const urlParams = new URLSearchParams(window.location.search);
+    const id = urlParams.get('id');
+
+    if (!id) {
+      alert('Filme/Série não encontrado');
+      window.location.href = "index.html";
+    }
+
+    // Buscar dados no Firestore
+    db.collection('conteudo').doc(id).get()
+      .then(doc => {
+        if (!doc.exists) {
+          alert('Conteúdo não encontrado');
+          window.location.href = "index.html";
+          return;
+        }
+        const data = doc.data();
+
+        document.getElementById('capa').src = data.capa;
+        document.getElementById('titulo').textContent = data.titulo;
+        document.getElementById('genero-ano').textContent = `${data.genero} • ${data.ano} • ${data.duracao}`;
+        document.getElementById('classificacao').textContent = `Classificação: ${data.classificacao}+`;
+        document.getElementById('sinopse').textContent = data.sinopse || 'Sinopse indisponível.';
+        document.getElementById('trailer').src = data.trailer || '';
+
+        // Preencher elenco
+        const elencoList = document.getElementById('lista-elenco');
+        if (data.elenco && data.elenco.length > 0) {
+          data.elenco.forEach(nome => {
+            const li = document.createElement('li');
+            li.textContent = nome;
+            elencoList.appendChild(li);
+          });
+        } else {
+          elencoList.innerHTML = '<li>Elenco não disponível.</li>';
+        }
+
+        // Botão assistir (link)
+        document.getElementById('btn-assistir').onclick = () => {
+          if (data.linkAssistir) {
+            window.open(data.linkAssistir, '_blank');
+          } else {
+            alert('Link para assistir não disponível.');
+          }
+        };
+      })
+      .catch(err => {
+        alert('Erro ao carregar dados.');
+        console.error(err);
+        window.location.href = "index.html";
+      });
+  </script>
+</body>
+</html>
